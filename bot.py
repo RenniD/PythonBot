@@ -2,7 +2,7 @@
 from telegram import  Update, InlineKeyboardButton , InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes,  Application
 
-appLication = Application.builder().token('8182581834:AAFXBuRAOexW7GH7W40q4_FIkPrYJnGJ4jo').build()
+appLication = Application.builder().token('8182581834:AAFXBuRAOexW7GH7W40q4_FIkPrYJnGJ4jo').build()  
 # Команда /start с приветсвенным сообщением и кнопками
 async def menu(update, context) :    
     inline_keyboard = [
@@ -12,6 +12,9 @@ async def menu(update, context) :
     markup = InlineKeyboardMarkup(inline_keyboard)
     await update.message.reply_text(        'Добро пожаловать в КриптоБот! \n'
         '/help - Более подробно ознакомится с ботом! \n',        reply_markup=markup)
+
+
+
 
 #  Обработчик действий с кнопок
 async def button_handler(update, context) :
