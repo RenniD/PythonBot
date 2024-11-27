@@ -59,10 +59,10 @@ async def donate(update, context):
     await update.message.reply_text(
        'Поддержать создателя бота - 456789098765 карта' )
 
+appLication.add_handler(CommandHandler("start", start))
 appLication.add_handler(CommandHandler("help", help))
 appLication.add_handler(CommandHandler("shop", shop))
 appLication.add_handler(CommandHandler("menu", menu))
-appLication.add_handler(CommandHandler("start", start))
 appLication.add_handler(CommandHandler("info", info))
 appLication.add_handler(CommandHandler("pay", pay))
 appLication.add_handler(CommandHandler("sell", sell))
