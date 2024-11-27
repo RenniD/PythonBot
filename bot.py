@@ -4,6 +4,11 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Cal
 
 appLication = Application.builder().token('8182581834:AAFXBuRAOexW7GH7W40q4_FIkPrYJnGJ4jo').build()
 # Команда /start с приветсвенным сообщением и кнопками
+async def start(update, context):   
+    await update.message.reply_text(
+            'Добро пожаловать в бот криптовалют!' 
+            'Более подробно команда /help')
+
 async def menu(update, context) :    
     inline_keyboard = [
         [InlineKeyboardButton('пока недоступнно', callback_data='menu')],
@@ -33,10 +38,7 @@ async def help(update, context):   await update.message.reply_text(
            '/menu  \n'           '/info  \n'
            '/pay  \n'           '/sell \n'
            '/buy  \n')
-async def start(update, context):   
-    await update.message.reply_text(
-            'Добро пожаловать в бот криптовалют!' 
-            'Более подробно команда /help')
+
 
 async def info(update, context):   
     await update.message.reply_text(
