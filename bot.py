@@ -1,3 +1,5 @@
+from gc import callbacks
+
 
 from telegram import  InputMediaPhoto, InlineKeyboardButton , InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes,  Application
@@ -11,9 +13,12 @@ async def start(update, context):
 
 async def menu(update, context) :
     inline_keyboard = [
+        [InlineKeyboardButton('пока недоступно',  callbacks_data='bitcoin')],
         [InlineKeyboardButton('пока недоступнно', callback_data='menu')],
         [InlineKeyboardButton('пока недоступнно', callback_data='donate')],
         [InlineKeyboardButton('пока недоступнно', callback_data='shop')]]
+
+
     markup = InlineKeyboardMarkup(inline_keyboard)
     await update.message.reply_text(        'Добро пожаловать в КриптоБот! \n'
         '/help - Более подробно ознакомится с ботом! \n',        reply_markup=markup)
@@ -22,6 +27,16 @@ async def menu(update, context) :
 async def button_handler(update, context) :
     query = update.callback_query
     await query.answer()
+
+    if query.data == 'bitcoin':
+        room_image_url = 'Image/bitcoin.jpg'
+        caption = 'Bitcoin'
+        try:
+           await  query.message.reply_photo(photo=room_image_url, caption=caption)
+        except FileNotFoundError as e:
+            await query.message.reply_text(f'Помилка: файл {e.filename} не знайдено')
+        except Exception as e:
+            await query.message.reply_text(f'Виникла помилка: {str(e)}')
     if query.data == 'help':
        await query.messeage.reply_text(           'Доступные команды \n'
            '/shop \n'           '/menu  \n'
@@ -58,6 +73,10 @@ async def buy(update, context):
 async def donate(update, context):
     await update.message.reply_text(
        'Поддержать создателя бота - 456789098765 карта' )
+async def bitcoin(update, context):
+    await update.message.reply_text(
+       'bitcoin' )
+
 
 appLication.add_handler(CommandHandler("start", start))
 appLication.add_handler(CommandHandler("help", help))
@@ -68,6 +87,7 @@ appLication.add_handler(CommandHandler("pay", pay))
 appLication.add_handler(CommandHandler("sell", sell))
 appLication.add_handler(CommandHandler("buy", buy))
 appLication.add_handler(CommandHandler("donate", donate))
+appLication.add_handler(CommandHandler("bitcoin", bitcoin))
 appLication.add_handler(CallbackQueryHandler(button_handler))
 
 
@@ -87,13 +107,14 @@ async def photo(update,context):
           await update.message.reply_text(f'Виникла помилка: {str(e)}')
 
  # Додавання обробника команди
-appLication.add_handler(CommandHandler('photo', photo))
+#appLication.add_handler(CommandHandler('photo', photo))
+
+
 
 
 #Запуск бота
 if __name__ == '__main__':
      appLication.run_polling()
-
 
 
 
