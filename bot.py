@@ -1,20 +1,121 @@
-from gc import callbacks
-
-
 from telegram import  InputMediaPhoto, InlineKeyboardButton , InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes,  Application
+from telegram.ext import CommandHandler, CallbackQueryHandler, Application
+import sqlite3
 
 appLication = Application.builder().token('8182581834:AAFXBuRAOexW7GH7W40q4_FIkPrYJnGJ4jo').build()
-# Команда /start с приветсвенным сообщением и кнопками
-async def start(update, context):
-    await update.message.reply_text(
-            'Добро пожаловать в бот криптовалют! \n' 
-            'Более подробно команда /help')
+
+
+
+def setup_database():
+    connection = sqlite3.connect('database.db')
+    cursor = connection.cursor()
+
+    # Створення таблиці користувачів
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        chat_id INTEGER NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS buy (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        cryptocurrency INTEGER NOT NULL,
+        created_ad TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+    )
+    """)
+    connection.commit()
+    connection.close()
+    print('База даних успішно налаштована.')
+
+def add_user(username, chat_id):
+    connection = sqlite3.connect('database.db')
+    cursor = connection.cursor()
+    try:
+        cursor.execute("""
+        INSERT OR IGNORE INTO users (username, chat_id)
+        VALUES (?, ?)
+        """, (username, chat_id))
+        connection.commit()
+        print(f'Користувач {username} успішно доданий.')
+    except sqlite3.Error as e:
+        print(f'Помилка при додаванні користувача: {e}')
+    finally:
+        connection.close()
+
+def add_buy(chat_id, cryptocurrency):
+    connection = sqlite3.connect('database.db')
+    cursor = connection.cursor()
+    try:
+        cursor.execute('SELECT id FROM users WHERE chat_id = ?', (chat_id,))
+        user_id = cursor.fetchone()
+        if user_id:
+            user_id = user_id[0]
+            cursor.execute("""
+            INSERT INTO buy (user_id, cryptocurrency )       
+            VALUES ( ?, ?, ?, ?, ?   """, (user_id, cryptocurrency))
+            connection.commit()
+            print('Криптовалюта успішно отримано')
+        else:
+            print('Користувача не знайдено в базі.')
+    except sqlite3.Error as e:
+        print(f'Помилка при додаванні Криптовалюти: {e}')
+    finally:
+        connection.close()
+
+def set_user_currency(currency_code):
+    """
+    Зберігає або оновлює основну валюту користувача.
+
+    :param currency_code: Код валюти ('USD')
+    """
+    # Підключення до бази даних
+    connection = sqlite3.connect("database.db")
+    cursor = connection.cursor()
+
+    # Створюємо таблицю, якщо вона ще не існує
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_currency (
+            user_id INT PRIMARY KEY,
+            currency_code TEXT NOT NULL
+        )
+    """)
+
+    connection.commit()
+    connection.close()
+
+        # Команда /start с приветсвенным сообщением и кнопками
+async def start_command(update, context):
+    username = update.effective_user.username or "NoUsername"
+    chat_id = update.effective_user.id
+
+
+    # Додавання користувача в базу даних
+    add_user(username, chat_id)
+    await update.message.reply_text('Добро пожаловать в КриптоБот! \n'
+                                '/help - Более подробно ознакомится с ботом! \n', )
+
+async def cryptocurrency(update, context):
+    chat_id = update.effective_user.id
+    context.user.data['cryptocurrency'] = update.message.text
+
+    # Збереження купівлі криптовалюти в базі
+    add_buy(
+        chat_id,
+        context.user_data['cryptocurrency']
+    )
+
+
 
 async def menu(update, context) :
     inline_keyboard = [
-        [InlineKeyboardButton('пока недоступно',  callbacks_data='bitcoin')],
-        [InlineKeyboardButton('пока недоступнно', callback_data='menu')],
+        [InlineKeyboardButton('Bitcoin' , callback_data='bitcoin')],
+        [InlineKeyboardButton('пока недоступнно', callback_data='help')],
         [InlineKeyboardButton('пока недоступнно', callback_data='donate')],
         [InlineKeyboardButton('пока недоступнно', callback_data='shop')]]
 
@@ -55,6 +156,7 @@ async def help(update, context):   await update.message.reply_text(
            '/buy  \n')
 
 
+
 async def info(update, context):
     await update.message.reply_text(
             'Бот создан для криптовалют' )
@@ -78,7 +180,9 @@ async def bitcoin(update, context):
        'bitcoin' )
 
 
-appLication.add_handler(CommandHandler("start", start))
+
+# Додавання обробника команди
+appLication.add_handler(CommandHandler("start", start_command))
 appLication.add_handler(CommandHandler("help", help))
 appLication.add_handler(CommandHandler("shop", shop))
 appLication.add_handler(CommandHandler("menu", menu))
@@ -106,10 +210,12 @@ async def photo(update,context):
       except Exception as e:
           await update.message.reply_text(f'Виникла помилка: {str(e)}')
 
- # Додавання обробника команди
-#appLication.add_handler(CommandHandler('photo', photo))
+
+appLication.add_handler(CommandHandler('photo', photo))
 
 
+# Ініціалізаців бази даних
+setup_database()
 
 
 #Запуск бота
