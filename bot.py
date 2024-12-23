@@ -1,6 +1,9 @@
-from telegram import  InputMediaPhoto, InlineKeyboardButton , InlineKeyboardMarkup
-from telegram.ext import CommandHandler, CallbackQueryHandler, Application
+from telegram import InputMediaPhoto, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, ConversationHandler, MessageHandler, filters
 import sqlite3
+
+# Стадії конверсії
+CRYPTOCURRENCY, PAYMENT, FINISH = range(3)
 
 appLication = Application.builder().token('8182581834:AAFXBuRAOexW7GH7W40q4_FIkPrYJnGJ4jo').build()
 
@@ -11,7 +14,7 @@ def setup_database():
     cursor = connection.cursor()
 
     # Створення таблиці користувачів
-    cursor.execute("""
+    cursor.execute("""  
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
@@ -57,8 +60,8 @@ def add_buy(chat_id, cryptocurrency):
         if user_id:
             user_id = user_id[0]
             cursor.execute("""
-            INSERT INTO buy (user_id, cryptocurrency )       
-            VALUES ( ?, ?, ?, ?, ?   """, (user_id, cryptocurrency))
+           INSERT INTO buy (user_id, cryptocurrency) VALUES (?, ?)
+              """, (user_id, cryptocurrency))
             connection.commit()
             print('Криптовалюта успішно отримано')
         else:
@@ -114,7 +117,7 @@ async def cryptocurrency(update, context):
 
 async def menu(update, context) :
     inline_keyboard = [
-        [InlineKeyboardButton('Bitcoin' , callback_data='bitcoin')],
+        [InlineKeyboardButton( 'Купить криптовалюту' , callback_data='buy')],
         [InlineKeyboardButton('пока недоступнно', callback_data='help')],
         [InlineKeyboardButton('пока недоступнно', callback_data='donate')],
         [InlineKeyboardButton('пока недоступнно', callback_data='shop')]]
@@ -129,15 +132,11 @@ async def button_handler(update, context) :
     query = update.callback_query
     await query.answer()
 
-    if query.data == 'bitcoin':
-        room_image_url = 'Image/bitcoin.jpg'
-        caption = 'Bitcoin'
-        try:
-           await  query.message.reply_photo(photo=room_image_url, caption=caption)
-        except FileNotFoundError as e:
-            await query.message.reply_text(f'Помилка: файл {e.filename} не знайдено')
-        except Exception as e:
-            await query.message.reply_text(f'Виникла помилка: {str(e)}')
+    if query.data == "buy":
+        await query.message.reply_text(
+            "Для покупки криптовалюты напишите название например(Bitcoin,Ethereum,DogeCoin,Cronos "
+        )
+        return cryptocurrency
     if query.data == 'help':
        await query.messeage.reply_text(           'Доступные команды \n'
            '/shop \n'           '/menu  \n'
@@ -155,6 +154,25 @@ async def help(update, context):   await update.message.reply_text(
            '/pay  \n'           '/sell \n'
            '/buy  \n')
 
+# Сбор данных для крипты
+async def CRYPTOCURRENCY(update, context):
+    context.user_data['CRYPTOCURRENCY'] = update.message.text
+    await update.message.reply_text("Введите количество которое вы хотите купить криптовалюты")
+    return PAYMENT
+
+async def PAYMENT(update, context):
+    context.user_data['PAYMENT'] = update.message.text
+    await update.message.reply_text("Оплатите сумму за приобритение криптовалюты \n"
+                                    "Номер карты - 456789098765 \n"
+                                    "И отправьте скриншот оплаты")
+    return FINISH
+
+async def FINISH(update, context):
+    context.user_data['FINISH'] = update.message.text
+    await update.message.reply_text("Модераторы проверят оплату в течении 5 минут \n"
+                                    "Если все правильно вам автоматически зачислят вашу криптовалюту")
+
+ 
 
 
 async def info(update, context):
