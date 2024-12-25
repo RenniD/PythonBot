@@ -131,11 +131,16 @@ async def button_handler(update, context) :
            '/shop \n'           '/menu  \n'
            '/info  \n'           '/pay  \n'
            '/sell \n'           '/buy  \n')
+           
+       return ConversationHandler.END
+
     elif query.data == 'donate':
         await query.message.reply_text(
             'Поддержать создателя бота - 456789098765 карта')
+        return ConversationHandler.END
     elif query.date == 'shop' :
         await query.message.reply_text(            'позвляет просмотреть криптовалюту в продаже')
+        return ConversationHandler.END
 
 async def help(update, context):   await update.message.reply_text(
            'Доступные команды \n'           '/shop \n'
@@ -186,7 +191,9 @@ async def bitcoin(update, context):
     await update.message.reply_text(
        'bitcoin' )
 
-
+async def cancel(update, context):
+    await update.message.reply_text("Бронирование отменено. Возвращайтесь, когда будете готовы!", reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
 
 # Додавання обробника команди
 appLication.add_handler(CommandHandler("start", start_command))
@@ -226,21 +233,20 @@ setup_database()
 
 # Добавление ConversationHandler для криптовалют
 booking_handler = ConversationHandler(
-    entry_points=[CallbackQueryHandler(button_handler, pattern="^book$")],
+    entry_points=[CallbackQueryHandler(button_handler, pattern="^(buy|help|donate|shop)$")],
     states={
         CRYPTOCURRENCY: [MessageHandler(filters.TEXT & ~filters.COMMAND, cryptocurrency)],
         PAYMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, payment)],
         FINISH: [MessageHandler(filters.TEXT & ~filters.COMMAND, finish)],
     },
-    fallbacks=[CommandHandler("cancel", cancel)],
+    fallbacks=[CommandHandler("cancel", cancel)], per_user = True
 )
-Application.add_handler(booking_handler)
+appLication.add_handler(booking_handler)
 
 
 #Запуск бота
 if __name__ == '__main__':
      appLication.run_polling()
-
 
 
 
