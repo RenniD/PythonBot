@@ -51,7 +51,7 @@ def add_user(username, chat_id):
     finally:
         connection.close()
 
-def add_buy(chat_id, cryptocurrency):
+def add_buy(chat_id, cryptocurrency1):
     connection = sqlite3.connect('database.db')
     cursor = connection.cursor()
     try:
@@ -61,7 +61,7 @@ def add_buy(chat_id, cryptocurrency):
             user_id = user_id[0]
             cursor.execute("""
            INSERT INTO buy (user_id, cryptocurrency) VALUES (?, ?)
-              """, (user_id, cryptocurrency))
+              """, (user_id, cryptocurrency1))
             connection.commit()
             print('Криптовалюта успішно отримано')
         else:
@@ -102,17 +102,6 @@ async def start_command(update, context):
     add_user(username, chat_id)
     await update.message.reply_text('Добро пожаловать в КриптоБот! \n'
                                 '/help - Более подробно ознакомится с ботом! \n', )
-
-async def cryptocurrency(update, context):
-    chat_id = update.effective_user.id
-    context.user.data['cryptocurrency'] = update.message.text
-
-    # Збереження купівлі криптовалюти в базі
-    add_buy(
-        chat_id,
-        context.user_data['cryptocurrency']
-    )
-
 
 
 async def menu(update, context) :
@@ -155,24 +144,24 @@ async def help(update, context):   await update.message.reply_text(
            '/buy  \n')
 
 # Сбор данных для крипты
-async def CRYPTOCURRENCY(update, context):
-    context.user_data['CRYPTOCURRENCY'] = update.message.text
+async def cryptocurrency(update, context):
+    context.user_data[' cryptocurrency'] = update.message.text
     await update.message.reply_text("Введите количество которое вы хотите купить криптовалюты")
     return PAYMENT
 
-async def PAYMENT(update, context):
-    context.user_data['PAYMENT'] = update.message.text
+async def payment(update, context):
+    context.user_data['payment'] = update.message.text
     await update.message.reply_text("Оплатите сумму за приобритение криптовалюты \n"
                                     "Номер карты - 456789098765 \n"
                                     "И отправьте скриншот оплаты")
     return FINISH
 
-async def FINISH(update, context):
-    context.user_data['FINISH'] = update.message.text
+async def finish(update, context):
+    context.user_data['finish'] = update.message.text
     await update.message.reply_text("Модераторы проверят оплату в течении 5 минут \n"
                                     "Если все правильно вам автоматически зачислят вашу криптовалюту")
 
- 
+
 
 
 async def info(update, context):
@@ -234,6 +223,18 @@ appLication.add_handler(CommandHandler('photo', photo))
 
 # Ініціалізаців бази даних
 setup_database()
+
+# Добавление ConversationHandler для криптовалют
+booking_handler = ConversationHandler(
+    entry_points=[CallbackQueryHandler(button_handler, pattern="^book$")],
+    states={
+        CRYPTOCURRENCY: [MessageHandler(filters.TEXT & ~filters.COMMAND, cryptocurrency)],
+        PAYMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, payment)],
+        FINISH: [MessageHandler(filters.TEXT & ~filters.COMMAND, finish)],
+    },
+    fallbacks=[CommandHandler("cancel", cancel)],
+)
+Application.add_handler(booking_handler)
 
 
 #Запуск бота
